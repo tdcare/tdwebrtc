@@ -1,0 +1,22 @@
+# Build outputs
+/build
+/dist
+/.build
+
+# Dependencies
+node_modules/
+oh_modules/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+/.hvigor/
+/oh-package-lock.json5

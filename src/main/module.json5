@@ -1,0 +1,11 @@
+{
+  "module": {
+    "name": "tdwebrtc",
+    "type": "har",
+    "deviceTypes": [
+      "default",
+      "tablet"
+    ],
+    "installationFree": false
+  }
+}

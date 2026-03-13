@@ -1,0 +1,27 @@
+# 构建产物
+/build
+/dist
+/target
+
+# 开发工具
+.idea/
+.vscode/
+*.iml
+
+# 日志
+*.log
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# 文档（README.md 会包含在发布包中）
+PUBLISH-GUIDE.md
+INTEGRATION-GUIDE.md
+
+# 构建脚本
+build-rust.ps1

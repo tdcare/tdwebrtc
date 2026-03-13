@@ -1,0 +1,39 @@
+{
+  "name": "tdwebrtc",
+  "version": "1.0.1",
+  "description": "WebRTC 音视频通话模块，封装 Rust WebRTC 引擎、信令客户端、音视频采集/编解码/渲染",
+  "main": "Index.ets",
+  "author": "tdcare",
+  "license": "MIT",
+  "homepage": "https://www.tdcare.cn",
+  "repository":"https://github.com/tdcare/tdwebrtc.git" ,
+  "keywords": [
+    "webrtc",
+    "harmonyos",
+    "openharmony",
+    "video-call",
+    "audio-call",
+    "rust-webrtc",
+    "h264",
+    "vp8",
+    "sdp",
+    "ice"
+  ],
+  "files": [
+    "src/main/ets/**",
+    "libs/**",
+    "Index.ets",
+    "README.md",
+    "BUILD.gn",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "apiVersion": {
+    "name": "5.0.0",
+    "minCompatVersion": "4.0.0"
+  },
+  "cpuArch": ["arm64-v8a", "armeabi-v7a", "x86_64"],
+  "dependencies": {},
+  "devDependencies": {},
+  "dynamicDependencies": {}
+}

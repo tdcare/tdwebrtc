@@ -1,0 +1,27 @@
+import("//build/toolchain/hap/hap.gni")
+
+config("td_webrtc_config") {
+  include_dirs = [
+    ".",
+  ]
+}
+
+# HarmonyOS WebRTC 模块
+har_target("td_webrtc") {
+  sources = [
+    "Index.ets",
+    "src/main/ets/AudioCapture.ets",
+    "src/main/ets/AudioPlayback.ets",
+    "src/main/ets/CameraCapture.ets",
+    "src/main/ets/MediaCodec.ets",
+    "src/main/ets/MediaStream.ets",
+    "src/main/ets/SignalingClient.ets",
+    "src/main/ets/VideoDecoderH264.ets",
+    "src/main/ets/VideoDecoderVP8.ets",
+    "src/main/ets/VideoSurface.ets",
+    "src/main/ets/WebRTCAdapter.ets",
+    "src/main/ets/WebRTCManager.ets",
+  ]
+
+  public_configs = [ ":td_webrtc_config" ]
+}

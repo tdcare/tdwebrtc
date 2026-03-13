@@ -1,0 +1,28 @@
+{
+  "name": "td_webrtc",
+  "version": "1.0.0",
+  "description": "WebRTC 音视频通话模块，封装 Rust WebRTC 引擎、信令客户端、音视频采集/编解码/渲染",
+  "main": "Index.ets",
+  "scripts": {
+    "build": "hvigor build",
+    "clean": "hvigor clean"
+  },
+  "keywords": [
+    "webrtc",
+    "harmonyos",
+    "openharmony",
+    "video-call",
+    "audio-call",
+    "real-time-communication"
+  ],
+  "author": "tdcare",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tdcare/td_webrtc.git"
+  },
+  "bugs": {
+    "url": "https://github.com/tdcare/td_webrtc/issues"
+  },
+  "homepage": "https://github.com/tdcare/td_webrtc#readme"
+}

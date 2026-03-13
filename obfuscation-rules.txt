@@ -1,0 +1,6 @@
+-keep-global-name
+WebRTC
+WebRTCMediaStream
+VideoSurface
+RemoteVideoSurface
+SignalingClient

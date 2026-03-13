@@ -1,0 +1,10 @@
+{
+  "modelVersion": "5.0.0",
+  "description": "please describe your hvigor-config.json5 file",
+  "inputs": {
+    "debuggable": true
+  },
+  "outputs": {
+    "product": []
+  }
+}
