@@ -29,8 +29,8 @@ ohpm i tdwebrtc
 ### 基本使用
 
 ```typescript
-import { WebRTC, createMediaStream, VideoSurface, RemoteVideoSurface } from 'tdwebrtc';
-import type { SurfaceInfo } from 'tdwebrtc';
+import { WebRTC, createMediaStream, VideoSurface, RemoteVideoSurface, SignalingClient } from 'tdwebrtc';
+import type { SurfaceInfo, MediaStreamConfig } from 'tdwebrtc';
 
 // 1. 初始化 WebRTC
 const success = await WebRTC.init({
@@ -39,7 +39,7 @@ const success = await WebRTC.init({
 });
 
 // 2. 创建媒体流
-const mediaStream = createMediaStream({
+const config: MediaStreamConfig = {
   video: { 
     enabled: true, 
     width: 1280, 
@@ -51,28 +51,38 @@ const mediaStream = createMediaStream({
     enabled: true, 
     sampleRate: 8000, 
     channels: 1,
-    codec: 'PCMU', // 或 'OPUS', 'AAC'
+    codec: 'PCMU', // 或 'PCMA', 'OPUS', 'AAC'
   },
-}, context);
+};
+const mediaStream = createMediaStream(config);
+mediaStream.setContext(context);
 
 // 3. 设置视频 Surface
-mediaStream.setLocalVideoSurface(localSurfaceId);
 mediaStream.setRemoteVideoSurface(remoteSurfaceId);
 
-// 4. 启动媒体流
-await mediaStream.startSending();
-await mediaStream.startReceiving();
+// 4. 初始化并启动媒体流
+await mediaStream.initializeVideoSender(localSurfaceId);
+await mediaStream.initializeVideoReceiver();
+await mediaStream.initializeAudioSender();
+await mediaStream.initializeAudioReceiver();
+await mediaStream.startVideoCapture();
+await mediaStream.startVideoDecoder();
+await mediaStream.startAudioSending();
+await mediaStream.startAudioReceiving();
 ```
 
 ## 核心功能
 
 - ✅ **WebRTC 协议**：SDP 协商、ICE 交换、DTLS 握手、RTP/RTCP 传输
 - ✅ **数据通道**：SCTP 可靠/非可靠传输
-- ✅ **视频编解码**：H.264/H.265 硬件加速、VP8 软件解码
+- ✅ **视频编解码**：H.264/H.265 硬件加速、VP8 软件编解码
 - ✅ **音频编解码**：G.711 (PCMU/PCMA)、OPUS 软件编解码
 - ✅ **媒体流管理**：采集、编解码、RTP 传输全链路封装
 - ✅ **视频渲染**：XComponent 本地预览与远端渲染组件
 - ✅ **设备控制**：摄像头切换、音频路由切换、静音控制
+- ✅ **信令客户端**：WebSocket 信令、房间管理、呼叫控制
+- ✅ **低端设备优化**：自动检测并降级配置
+- ✅ **动态编解码器切换**：根据设备能力自动选择最优编解码器
 
 ## API 参考
 
@@ -107,6 +117,10 @@ WebRTC.addVideoTrack('video-0', 'H264');
 WebRTC.addAudioTrack('audio-0', 'PCMU');
 const tracks = WebRTC.getMediaTracks();
 
+// 编解码器能力
+const sendCodec = WebRTC.getSendVideoCodec();     // 获取发送编解码器
+const recvCodec = WebRTC.getPreferredVideoCodec(); // 获取接收编解码器
+
 // 回调设置
 WebRTC.setOnStateChange((state) => {
   console.log('状态变化:', state);
@@ -117,6 +131,9 @@ WebRTC.setOnConnected(() => {
 WebRTC.setOnIceCandidate((candidate) => {
   console.log('ICE 候选:', candidate);
 });
+
+// 关闭连接
+await WebRTC.close();
 ```
 
 ### MediaStream
@@ -127,31 +144,112 @@ import type { MediaStreamConfig } from 'tdwebrtc';
 
 // 创建
 const config: MediaStreamConfig = {
-  video: { enabled: true, width: 1280, height: 720, codec: 'H264' },
-  audio: { enabled: true, sampleRate: 8000, codec: 'PCMU' },
+  video: { 
+    enabled: true, 
+    width: 1280, 
+    height: 720, 
+    frameRate: 30,
+    codec: 'H264',
+    cameraPosition: 'back', // 或 'front'
+  },
+  audio: { 
+    enabled: true, 
+    sampleRate: 8000, 
+    channels: 1,
+    codec: 'PCMU', 
+  },
 };
-const mediaStream = createMediaStream(config, context);
+const mediaStream = createMediaStream(config);
+mediaStream.setContext(context);
 
 // 设置 Surface
-mediaStream.setLocalVideoSurface(surfaceId);
 mediaStream.setRemoteVideoSurface(surfaceId);
 
-// 启停
-await mediaStream.startSending();
-await mediaStream.startReceiving();
-await mediaStream.stopAll();
+// 初始化发送端
+await mediaStream.initializeVideoSender(previewSurfaceId);
+await mediaStream.initializeAudioSender();
+
+// 初始化接收端
+await mediaStream.initializeVideoReceiver();
+await mediaStream.initializeAudioReceiver();
+
+// 启动
+await mediaStream.startVideoCapture();
+await mediaStream.startVideoDecoder();
+await mediaStream.startAudioSending();
+await mediaStream.startAudioReceiving();
 
 // 控制
-await mediaStream.setVideoEnabled(false);
-await mediaStream.switchCamera();
-mediaStream.setAudioMute(true);
+await mediaStream.setVideoEnabled(false);  // 关闭视频（发送占位画面）
+await mediaStream.switchCamera();          // 切换前后摄像头
+await mediaStream.setAudioMute(true);      // 静音
+await mediaStream.setAudioRoute(true);     // 免提
+await mediaStream.requestKeyFrame();       // 请求关键帧
 
-// 发送数据
-mediaStream.sendVideoFrame(yuvData);
-mediaStream.sendAudioSamples(pcmData);
+// 停止并释放
+await mediaStream.stopAll();
+await mediaStream.release();
+```
 
-// 释放
-mediaStream.release();
+### SignalingClient
+
+```typescript
+import { SignalingClient, CallType, CmdAction } from 'tdwebrtc';
+import type { SignalingCallback, SignalingData } from 'tdwebrtc';
+
+const callback: SignalingCallback = {
+  onInitSuccess() { console.log('信令连接成功'); },
+  onPeerJoined(fromMac, roomId) { console.log(`对端加入: ${fromMac}`); },
+  onPeerLeaved(fromMac, roomId) { console.log(`对端离开: ${fromMac}`); },
+  onOfferReceived(data) { /* 处理 Offer */ },
+  onAnswerReceived(data) { /* 处理 Answer */ },
+  onIceCandidateReceived(data) { /* 处理 ICE */ },
+  onCall(data) { /* 来电 */ },
+  onHangup(data) { /* 挂断 */ },
+  onVideoCall(data) { /* 视频呼叫 */ },
+  onVideoHangup(data) { /* 视频挂断 */ },
+  // ... 其他回调
+};
+
+const signaling = new SignalingClient();
+signaling.init('ws://server:port/', 'device-mac', '{}', callback);
+
+// 发送消息
+signaling.joinRoom('room-123');
+signaling.sendSessionDescription(sdp, 'offer', toMac, roomId);
+signaling.sendIceCandidate(candidate, sdpMid, sdpMLineIndex, toMac, roomId);
+signaling.sendCall(toMac, roomId, CallType.VIDEO);
+signaling.sendHangup(toMac, roomId);
+
+// 断开连接
+signaling.close();
+```
+
+### VideoSurface 组件
+
+```typescript
+import { VideoSurface, RemoteVideoSurface } from 'tdwebrtc';
+import type { SurfaceInfo } from 'tdwebrtc';
+
+// 本地预览
+VideoSurface({
+  componentId: 'local-preview',
+  surfaceWidth: 640,
+  surfaceHeight: 480,
+  onSurfaceReady: (info: SurfaceInfo) => {
+    mediaStream.initializeVideoSender(info.surfaceId);
+  },
+})
+
+// 远端视频
+RemoteVideoSurface({
+  componentId: 'remote-video',
+  surfaceWidth: 640,
+  surfaceHeight: 480,
+  onSurfaceReady: (info: SurfaceInfo) => {
+    mediaStream.setRemoteVideoSurface(info.surfaceId);
+  },
+})
 ```
 
 ### 视频编解码器支持
@@ -160,12 +258,26 @@ mediaStream.release();
 |---------|------|------|
 | H264 | 视频 | 硬件加速，推荐使用 |
 | H265 | 视频 | 硬件加速 |
-| VP8 | 视频 | 软件解码 |
+| VP8 | 视频 | 软件编解码，兜底方案 |
 | VP9 | 视频 | 软件解码 |
 | PCMU | 音频 | G.711 µ-law |
 | PCMA | 音频 | G.711 A-law |
 | OPUS | 音频 | 高质量音频编解码 |
 | AAC | 音频 | 通用音频格式 |
+
+### 编解码器能力检测
+
+```typescript
+import { isCodecSupported, detectVideoCodecCapabilities } from 'tdwebrtc';
+
+// 检测单个编解码器
+const h264Supported = isCodecSupported('H264');
+
+// 检测全部能力
+const capabilities = detectVideoCodecCapabilities();
+console.log('H264 硬件编解码:', capabilities.h264);
+console.log('VP8 软件编解码:', capabilities.vp8);
+```
 
 ## 依赖说明
 
@@ -216,14 +328,15 @@ WebRTC.setOnStateChange((state) => {
 A: 确保按顺序正确初始化：
 
 ```typescript
-// 1. 创建 XComponent 获取 surfaceId
-XComponent({
+// 1. 使用 VideoSurface 组件获取 surfaceId
+VideoSurface({
   componentId: 'local-preview',
-  type: 'surface',
-  onSurfaceReady: (info) => {
-    // 2. 将 surfaceId 传递给 MediaStream
-    mediaStream.setLocalVideoSurface(info.surfaceId);
-  }
+  surfaceWidth: 640,
+  surfaceHeight: 480,
+  onSurfaceReady: (info: SurfaceInfo) => {
+    // 2. 用 surfaceId 初始化视频发送端
+    mediaStream.initializeVideoSender(info.surfaceId);
+  },
 })
 ```
 
