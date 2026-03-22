@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## [1.0.2] - 2026-03-22
+
+### 文档与示例
+- 更新 README.md 功能文档，扩展 MediaStream、SignalingClient、视频组件等使用说明
+- 更新 CHANGELOG.md，详细说明 WebRTC 引擎、编解码器、媒体流管理等功能
+- 新增编解码器能力检测 API 文档
+- 添加 example 目录下的代码示例：
+  - BasicVideoCallExample.ets: 基础视频通话示例
+  - MediaStreamAdvancedExample.ets: 高级媒体流管理示例
+  - SignalingClientExample.ets: 信令客户端示例
+  - example/README.md: 示例文档
+
 ## [1.0.1] - 2026-03-12
 
 ### 变更说明

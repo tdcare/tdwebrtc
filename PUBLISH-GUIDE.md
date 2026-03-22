@@ -122,6 +122,21 @@ unpacked size:  14.2 MB
 total files:    31
 ```
 
+### tdwebrtc@1.0.2 发布说明
+
+```
+版本: 1.0.2
+发布日期: 2026-03-22
+
+更新内容:
+- 更新 README.md 功能文档
+- 更新 CHANGELOG.md 变更日志
+- 新增编解码器能力检测 API 文档
+- 添加 example 目录下的代码示例
+
+# 构建完成后更新包大小等详细信息
+```
+
 ## 使用方式
 
 ### 安装
@@ -139,7 +154,7 @@ ohpm i tdwebrtc
 ```json5
 {
   "dependencies": {
-    "tdwebrtc": "^1.0.0"
+    "tdwebrtc": "^1.0.2"
   }
 }
 ```
@@ -150,25 +165,32 @@ ohpm i tdwebrtc
 import { WebRTC, createMediaStream, VideoSurface, RemoteVideoSurface } from 'tdwebrtc';
 import type { SurfaceInfo, MediaStreamConfig } from 'tdwebrtc';
 
-// 初始化 WebRTC
+// 1. 初始化 WebRTC
 const success = await WebRTC.init({
   stunServers: ['stun:stun.l.google.com:19302'],
   localPort: 0,
 });
 
-// 创建媒体流
-const mediaStream = createMediaStream({
-  video: { enabled: true, width: 1280, height: 720, codec: 'H264' },
-  audio: { enabled: true, sampleRate: 8000, codec: 'PCMU' },
-}, context);
+// 2. 创建媒体流
+const config: MediaStreamConfig = {
+  video: { enabled: true, width: 1280, height: 720, frameRate: 30, codec: 'H264' },
+  audio: { enabled: true, sampleRate: 8000, channels: 1, codec: 'PCMU' },
+};
+const mediaStream = createMediaStream(config);
+mediaStream.setContext(context);
 
-// 设置视频 Surface
-mediaStream.setLocalVideoSurface(localSurfaceId);
+// 3. 设置远端视频 Surface
 mediaStream.setRemoteVideoSurface(remoteSurfaceId);
 
-// 启动媒体流
-await mediaStream.startSending();
-await mediaStream.startReceiving();
+// 4. 初始化并启动媒体流
+await mediaStream.initializeVideoSender(localSurfaceId);  // 本地预览 Surface
+await mediaStream.initializeVideoReceiver();
+await mediaStream.initializeAudioSender();
+await mediaStream.initializeAudioReceiver();
+await mediaStream.startVideoCapture();
+await mediaStream.startVideoDecoder();
+await mediaStream.startAudioSending();
+await mediaStream.startAudioReceiving();
 ```
 
 ## 版本更新流程
@@ -186,8 +208,8 @@ await mediaStream.startReceiving();
 ohpm publish build\default\outputs\default\tdwebrtc.har
 
 # 6. 打 Git 标签
-git tag v1.0.0
-git push origin v1.0.0
+git tag v1.0.2
+git push origin v1.0.2
 ```
 
 ## 常见问题

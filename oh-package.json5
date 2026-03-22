@@ -1,6 +1,6 @@
 {
   "name": "tdwebrtc",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "WebRTC 音视频通话模块，封装 Rust WebRTC 引擎、信令客户端、音视频采集/编解码/渲染",
   "main": "Index.ets",
   "author": "tdcare",
